@@ -23,31 +23,6 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-@app.get('/oreon_bestprice', response_model=Dict[str, str])
-async def get_oreon_bestprice():
-    try:
-        # Запрос к базе данных для получения code_oreon и best_price из двух таблиц
-        with conn.cursor() as cursor:
-            sql = """
-                SELECT c.code_oreon, b.best_price
-                FROM public.logs_cardsproduct c
-                JOIN public.logs_bestprice b ON c.code = b.id_product_id
-                """
-            cursor.execute(sql)
-            results = cursor.fetchall()
-
-        if results:
-            # Создаем словарь, где ключом будет code_oreon, а значением best_price
-            oreon_bestprice = {row[0]: str(row[1]) for row in results}
-            return oreon_bestprice
-        else:
-            raise HTTPException(status_code=404, detail='Данные не найдены')
-
-    except Exception as e:
-        raise HTTPException(status_code=500, detail=str(e))
-    
-
-
 @app.post('/oreon_bestprice')
 async def receive_ids_from_extension(data: Dict[str, List[str]]):
     try:
@@ -70,7 +45,7 @@ async def receive_ids_from_extension(data: Dict[str, List[str]]):
             oreon_bestprice = {row[0]: str(row[1]) for row in results}
 
             # Выводим результаты только для ключей, содержащихся в списке ids
-            selected_oreon_bestprice = {key: value for key, value in oreon_bestprice.items() if key in ids}
+            selected_oreon_bestprice = {'Offers_' + key: value for key, value in oreon_bestprice.items() if key in ids}
             print(selected_oreon_bestprice)
 
             # Возвращаем результат в формате JSON
