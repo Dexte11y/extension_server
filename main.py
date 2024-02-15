@@ -6,7 +6,6 @@ import psycopg2
 
 app = FastAPI()
 
-# Подключение к базе данных PostgreSQL
 conn = psycopg2.connect(
     dbname='backup',
     user='postgres',
@@ -14,12 +13,11 @@ conn = psycopg2.connect(
     host='localhost'
 )
 
-# Настройка CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["https://optvideo.com"],  # Для разрешения всех источников
+    allow_origins=["https://optvideo.com"],  
     allow_credentials=True,
-    allow_methods=["GET", "POST"],
+    allow_methods=["POST"],
     allow_headers=["*"],
 )
 
@@ -30,7 +28,6 @@ async def receive_ids_from_extension(data: Dict[str, List[str]]):
         if not ids:
             raise HTTPException(status_code=400, detail='Invalid data. "ids" is missing.')
 
-        # Запрос к базе данных для получения code_oreon и best_price из двух таблиц
         with conn.cursor() as cursor:
             sql = """
                 SELECT c.code_oreon, b.best_price
@@ -41,16 +38,12 @@ async def receive_ids_from_extension(data: Dict[str, List[str]]):
             results = cursor.fetchall()
 
         if results:
-            # Создаем словарь, где ключом будет code_oreon, а значением best_price
             oreon_bestprice = {row[0]: str(row[1]) for row in results}
 
-            # Выводим результаты только для ключей, содержащихся в списке ids
             selected_oreon_bestprice = {'Offers_' + key: value for key, value in oreon_bestprice.items() if key in ids}
-            print(selected_oreon_bestprice)
 
-            # Возвращаем результат в формате JSON
             return JSONResponse(content=selected_oreon_bestprice)
         else:
-            return JSONResponse(content={}, status_code=404)  # Если результат не найден, возвращаем пустой объект с кодом 404
+            return JSONResponse(content={}, status_code=404)
     except Exception as e:
-        return JSONResponse(content={"error": str(e)}, status_code=500)  # Возвращаем информацию об ошибке с кодом 500
+        return JSONResponse(content={"error": str(e)}, status_code=500) 
